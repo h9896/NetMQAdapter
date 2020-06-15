@@ -18,11 +18,13 @@ namespace NetMQAdapter.Socket
         private string _endPoint { get; set; }
         private ZmqSocketType _socketType { get; set; }
         private List<string> _topic { get; set; }
+        private int _dataMaxLength { get; set; }
         private bool _isBind { get; set; }
         public void SendData(byte[][] data)
         {
             try
             {
+                if (data.Length > _dataMaxLength) { throw new NotImplementedException($"SendData fail: data length out of range-> {_dataMaxLength}, please use SetDataLength to change"); }
                 NetMQMessage msg = new NetMQMessage();
                 for (int i = 0; i < data.Length; i++)
                 {
@@ -47,12 +49,17 @@ namespace NetMQAdapter.Socket
             }
             catch (Exception ex) { throw new NotImplementedException($"Subscribe fail ZMQName: {_zmqName}, IP: {_endPoint} ---> {ex.Message}\r\n{ex.StackTrace}\r\n{ex.Source}"); }
         }
+        public void SetDataLength(int length = 4)
+        {
+            _dataMaxLength = length;
+        }
         internal SocketAdapter(ZmqSocketType socketType, string endPoint, bool isBind, string identity)
         {
             _endPoint = endPoint;
             _socketType = socketType;
             _isBind = isBind;
             _topic = new List<string>();
+            SetDataLength();
             _socket = InitSocket(socketType, endPoint, isBind, identity);
         }
         internal void SetZmqname(string name) { _zmqName = name; }
@@ -115,7 +122,7 @@ namespace NetMQAdapter.Socket
         {
             try
             {
-                byte[][] item = new byte[4][];
+                byte[][] item = new byte[_dataMaxLength][];
                 item[0] = e.Socket.ReceiveFrameBytes();
                 int i = 0;
                 while (e.Socket.Options.ReceiveMore)
@@ -123,7 +130,12 @@ namespace NetMQAdapter.Socket
                     i++;
                     e.Socket.TryReceiveFrameBytes(out item[i]);
                 }
-                _receive?.Invoke(_zmqName, item);
+                ReceiveEventArgs eventArgs = new ReceiveEventArgs
+                {
+                    Item = item,
+                    ZMQName = _zmqName
+                };
+                _receive?.Invoke(this, eventArgs);
             }
             catch (Exception ex)
             {

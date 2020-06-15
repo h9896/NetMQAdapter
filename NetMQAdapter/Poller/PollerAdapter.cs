@@ -11,10 +11,12 @@ namespace NetMQAdapter.Poller
     {
         private NetMQPoller _poller { get; set; }
         private ConcurrentDictionary<string, SocketAdapter> _socketDictionary { get; set; }
+        private ConcurrentDictionary<string, ITimer> _timerDictionary { get; set; }
         public PollerAdapter()
         {
             _poller = new NetMQPoller();
             _socketDictionary = new ConcurrentDictionary<string, SocketAdapter>();
+            _timerDictionary = new ConcurrentDictionary<string, ITimer>();
         }
         public ISocket AddSocket(string socketType, string endPoint, bool isBind, string name, string identity = "")
         {
@@ -39,6 +41,8 @@ namespace NetMQAdapter.Poller
             {
                 TimerAdapter timer = new TimerAdapter(interval, socket);
                 _poller.Add(timer.Timer);
+                if (_timerDictionary.ContainsKey(socket.ZMQName)) { _timerDictionary.TryUpdate(socket.ZMQName, timer, timer); }
+                else { _timerDictionary.TryAdd(socket.ZMQName, timer); }
                 return timer;
             }
             catch (Exception ex)
@@ -46,14 +50,25 @@ namespace NetMQAdapter.Poller
                 throw new NotImplementedException($"AddTimer: ISocket-Name: {socket.ZMQName} ---> {ex.Message}\r\n{ex.StackTrace}\r\n{ex.Source}");
             }
         }
-
+        ~PollerAdapter() { Dispose(false); }
         public void Dispose()
         {
-            Stop();
-            _poller.Dispose();
+            Dispose(true);
             GC.SuppressFinalize(this);
         }
-
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                // free managed resources
+                if (_poller != null)
+                {
+                    StopAll();
+                    _poller.Dispose();
+                    _poller = null;
+                }
+            }
+        }
         public void Start()
         {
             try
@@ -65,23 +80,51 @@ namespace NetMQAdapter.Poller
                 throw new NotImplementedException($"Start ---> {ex.Message}\r\n{ex.StackTrace}\r\n{ex.Source}");
             }
         }
-
-        public void Stop()
+        public void Stop(string name)
         {
             try
             {
                 if (_poller.IsRunning)
                 {
-                    foreach(KeyValuePair<string, SocketAdapter> item in _socketDictionary)
+                    if (_socketDictionary.ContainsKey(name))
+                    {
+                        _socketDictionary.TryRemove(name, out SocketAdapter socket);
+                        socket.UnSubscribe();
+                        socket.UnBindOrDisconnect();
+                        _poller.RemoveAndDispose(socket._socket);
+                    }
+                    if (_timerDictionary.ContainsKey(name))
+                    {
+                        _timerDictionary.TryRemove(name, out ITimer timer);
+                        _poller.Remove(timer.Timer);
+                    }
+                }
+            }
+            catch (Exception ex) { throw new NotImplementedException($"Stop ---> {ex.Message}\r\n{ex.StackTrace}\r\n{ex.Source}"); }
+        }
+
+        public void StopAll()
+        {
+            try
+            {
+                if (_poller.IsRunning)
+                {
+                    foreach (KeyValuePair<string, ITimer> item in _timerDictionary)
+                    {
+                        _poller.Remove(item.Value.Timer);
+                    }
+                    _timerDictionary.Clear();
+                    foreach (KeyValuePair<string, SocketAdapter> item in _socketDictionary)
                     {
                         item.Value.UnSubscribe();
                         item.Value.UnBindOrDisconnect();
                         _poller.RemoveAndDispose(item.Value._socket);
                     }
+                    _socketDictionary.Clear();
                     _poller.Stop();
                 }
             }
-            catch (Exception ex) { throw new NotImplementedException($"Stop ---> {ex.Message}\r\n{ex.StackTrace}\r\n{ex.Source}"); }
+            catch (Exception ex) { throw new NotImplementedException($"StopAll ---> {ex.Message}\r\n{ex.StackTrace}\r\n{ex.Source}"); }
         }
         private ZmqSocketType GetSocketType(string socketType)
         {

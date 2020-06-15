@@ -1,7 +1,13 @@
-﻿namespace NetMQAdapter
+﻿using System;
+namespace NetMQAdapter
 {
     public class Element
     {
-        public delegate void ReceiveHandler(string name, byte[][] value);
+        public delegate void ReceiveHandler(object sender, ReceiveEventArgs e);
+    }
+    public class ReceiveEventArgs: EventArgs
+    {
+        public byte[][] Item { get; internal set; }
+        public string ZMQName { get; internal set; }
     }
 }
