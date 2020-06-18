@@ -21,8 +21,7 @@ using (var poller = new PollerAdapter()) // Create a poller to control all socke
         string receiveData = "";
         for (int i = 1; i < e.Item.Length; i++)
         {
-            if (e.Item[i] != null)
-                receiveData += Encoding.UTF8.GetString(e.Item[i]);
+            if (e.Item[i] != null) { receiveData += Encoding.UTF8.GetString(e.Item[i]); }
         }
         Console.WriteLine("From Client: {0}", receiveData);
 
@@ -38,8 +37,7 @@ using (var poller = new PollerAdapter()) // Create a poller to control all socke
         string result = "";
         for (int i = 0; i < e.Item.Length; i++)
         {
-            if (e.Item[i] != null)
-                result += Encoding.UTF8.GetString(e.Item[i]);
+            if (e.Item[i] != null) { result += Encoding.UTF8.GetString(e.Item[i]); }
         }
 
         Console.WriteLine("From Server: {0}", result);
