@@ -6,13 +6,14 @@ Before using NetMQAdapter, make sure to read the [ZeroMQ Guide](http://zguide.ze
 Here is a simple example:
 
 ```csharp
+// Using AutoResetEvent to wait result, because sending data and receiving data are asynchronous
 AutoResetEvent eventRaised = new AutoResetEvent(false);
-using (var poller = new PollerAdapter()) // Create a poller to control all sockets.
+using (var poller = new PollerAdapter()) // Create a poller to control all sockets
 {
     ISocket server = poller.AddSocket("router", "tcp://localhost:5556", true, "TestServer", Guid.NewGuid().ToString()); // Bind
     ISocket client = poller.AddSocket("Dealer", "tcp://localhost:5556", false, "TestClient", Guid.NewGuid().ToString()); // connect
 
-    // Receive event on server.
+    // Receive event on server
     server.Received += (s, e) =>
     {
         // Receive the message from the server socket
@@ -30,7 +31,7 @@ using (var poller = new PollerAdapter()) // Create a poller to control all socke
         server.SendData(sendMessage);
     };
 
-    // Receive event on client.
+    // Receive event on client
     client.Received += (s, e) =>
     {
         // Receive the response from the client socket
@@ -42,11 +43,17 @@ using (var poller = new PollerAdapter()) // Create a poller to control all socke
         }
 
         Console.WriteLine("From Server: {0}", result);
+        // Trigger AutoResetEvent
         eventRaised.Set();
     };
+    
+    // Active poller
     poller.Start();
+    
+    // Send a message from the client socket
     byte[][] client1Data = { Encoding.UTF8.GetBytes("Hello") };
     client.SendData(client1Data);
+    
     eventRaised.WaitOne(3000);
     poller.StopAll();
 }
