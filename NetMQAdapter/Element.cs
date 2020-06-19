@@ -10,4 +10,13 @@ namespace NetMQAdapter
         public byte[][] Item { get; internal set; }
         public string ZMQName { get; internal set; }
     }
+    public enum SocketType
+    {
+        Router,
+        Dealer,
+        Pub,
+        Sub,
+        Request,
+        Response,
+    }
 }

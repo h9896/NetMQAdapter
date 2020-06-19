@@ -10,8 +10,8 @@ Here is a simple example:
 AutoResetEvent eventRaised = new AutoResetEvent(false);
 using (var poller = new PollerAdapter()) // Create a poller to control all sockets
 {
-    ISocket server = poller.AddSocket("router", "tcp://localhost:5556", true, "TestServer", Guid.NewGuid().ToString()); // Bind
-    ISocket client = poller.AddSocket("Dealer", "tcp://localhost:5556", false, "TestClient", Guid.NewGuid().ToString()); // connect
+    ISocket server = poller.AddSocket(SocketType.Router, "tcp://localhost:5556", true, "TestServer", Guid.NewGuid().ToString()); // Bind
+    ISocket client = poller.AddSocket(SocketType.Dealer, "tcp://localhost:5556", false, "TestClient", Guid.NewGuid().ToString()); // connect
 
     // Receive event on server
     server.Received += (s, e) =>
@@ -21,7 +21,8 @@ using (var poller = new PollerAdapter()) // Create a poller to control all socke
         string receiveData = "";
         for (int i = 1; i < e.Item.Length; i++)
         {
-            if (e.Item[i] != null) { receiveData += Encoding.UTF8.GetString(e.Item[i]); }
+            if (e.Item[i] == null) { break; }
+            else { receiveData += Encoding.UTF8.GetString(e.Item[i]); }
         }
         Console.WriteLine("From Client: {0}", receiveData);
 
@@ -37,7 +38,8 @@ using (var poller = new PollerAdapter()) // Create a poller to control all socke
         string result = "";
         for (int i = 0; i < e.Item.Length; i++)
         {
-            if (e.Item[i] != null) { result += Encoding.UTF8.GetString(e.Item[i]); }
+            if (e.Item[i] == null) { break; }
+            else{ result += Encoding.UTF8.GetString(e.Item[i]); }
         }
 
         Console.WriteLine("From Server: {0}", result);

@@ -40,7 +40,7 @@ namespace NetMQAdapter.Socket
             {
                 if (_socketType == ZmqSocketType.Sub)
                 {
-                    foreach (string str in _topic)
+                    foreach (string str in topic)
                     {
                         (_socket as SubscriberSocket).Subscribe(str);
                         _topic.Add(str);
@@ -49,17 +49,13 @@ namespace NetMQAdapter.Socket
             }
             catch (Exception ex) { throw new NotImplementedException($"Subscribe fail ZMQName: {_zmqName}, IP: {_endPoint} ---> {ex.Message}\r\n{ex.StackTrace}\r\n{ex.Source}"); }
         }
-        public void SetDataLength(int length = 4)
-        {
-            _dataMaxLength = length;
-        }
-        internal SocketAdapter(ZmqSocketType socketType, string endPoint, bool isBind, string identity)
+        internal SocketAdapter(ZmqSocketType socketType, string endPoint, bool isBind, string identity, int dataLength)
         {
             _endPoint = endPoint;
             _socketType = socketType;
             _isBind = isBind;
             _topic = new List<string>();
-            SetDataLength();
+            SetDataLength(dataLength);
             _socket = InitSocket(socketType, endPoint, isBind, identity);
         }
         internal void SetZmqname(string name) { _zmqName = name; }
@@ -141,6 +137,10 @@ namespace NetMQAdapter.Socket
             {
                 throw new NotImplementedException($"Socket_ReceiveReady fail ZMQName: {_zmqName}, IP: {_endPoint} ---> {ex.Message}\r\n{ex.StackTrace}\r\n{ex.Source}");
             }
+        }
+        private void SetDataLength(int length)
+        {
+            _dataMaxLength = length;
         }
     }
 }

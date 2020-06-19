@@ -18,11 +18,11 @@ namespace NetMQAdapter.Poller
             _socketDictionary = new ConcurrentDictionary<string, SocketAdapter>();
             _timerDictionary = new ConcurrentDictionary<string, ITimer>();
         }
-        public ISocket AddSocket(string socketType, string endPoint, bool isBind, string name, string identity = "")
+        public ISocket AddSocket(SocketType socketType, string endPoint, bool isBind, string name, string identity = "", int dataLength = 4)
         {
             try
             {
-                SocketAdapter socket = new SocketAdapter(GetSocketType(socketType), endPoint, isBind, identity);
+                SocketAdapter socket = new SocketAdapter(GetSocketType(socketType), endPoint, isBind, identity, dataLength);
                 socket.SetZmqname(name);
                 _poller.Add(socket._socket);
                 if (_socketDictionary.ContainsKey(name)) { _socketDictionary.TryUpdate(name, socket, socket); }
@@ -126,18 +126,22 @@ namespace NetMQAdapter.Poller
             }
             catch (Exception ex) { throw new NotImplementedException($"StopAll ---> {ex.Message}\r\n{ex.StackTrace}\r\n{ex.Source}"); }
         }
-        private ZmqSocketType GetSocketType(string socketType)
+        private ZmqSocketType GetSocketType(SocketType socketType)
         {
-            switch (socketType.ToUpper())
+            switch (socketType)
             {
-                case "PUB":
-                    return ZmqSocketType.Pub;
-                case "SUB":
-                    return ZmqSocketType.Sub;
-                case "ROUTER":
+                case SocketType.Router:
                     return ZmqSocketType.Router;
-                case "DEALER":
+                case SocketType.Dealer:
                     return ZmqSocketType.Dealer;
+                case SocketType.Pub:
+                    return ZmqSocketType.Pub;
+                case SocketType.Sub:
+                    return ZmqSocketType.Sub;
+                case SocketType.Request:
+                    return ZmqSocketType.Req;
+                case SocketType.Response:
+                    return ZmqSocketType.Rep;
                 default:
                     throw new ArgumentOutOfRangeException($"SocketType:({socketType}) out of range!");
             }
