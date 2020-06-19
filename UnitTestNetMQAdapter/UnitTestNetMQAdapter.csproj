@@ -59,7 +59,8 @@
   </Choose>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="UnitTest.cs" />
+    <Compile Include="PubSub.cs" />
+    <Compile Include="RouterDealer.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NetMQAdapter\NetMQAdapter.csproj">
