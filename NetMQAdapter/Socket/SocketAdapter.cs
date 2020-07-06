@@ -99,6 +99,10 @@ namespace NetMQAdapter.Socket
                     return new NetMQ.Sockets.RouterSocket();
                 case ZmqSocketType.Dealer:
                     return new NetMQ.Sockets.DealerSocket();
+                case ZmqSocketType.Rep:
+                    return new NetMQ.Sockets.ResponseSocket();
+                case ZmqSocketType.Req:
+                    return new NetMQ.Sockets.RequestSocket();
                 default:
                     throw new ArgumentOutOfRangeException($"SocketType:({socketType}) out of range!");
             }
@@ -110,6 +114,8 @@ namespace NetMQAdapter.Socket
                 case ZmqSocketType.Sub:
                 case ZmqSocketType.Dealer:
                 case ZmqSocketType.Router:
+                case ZmqSocketType.Rep:
+                case ZmqSocketType.Req:
                     socket.ReceiveReady += Socket_ReceiveReady;
                     break;
             }
